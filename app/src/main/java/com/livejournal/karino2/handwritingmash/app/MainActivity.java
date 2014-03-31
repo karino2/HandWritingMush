@@ -155,18 +155,10 @@ public class MainActivity extends ActionBarActivity {
     private void reflectClipboard() {
         EditText et = (EditText)urlDialog.findViewById(R.id.edit_url);
         ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        // String result = clipboardManager.getText().toString();
         if (clipboardManager.getPrimaryClip().getItemCount() == 0)
             return; // do nothing.
         ClipData.Item item = clipboardManager.getPrimaryClip().getItemAt(0);
         String result = item.getText().toString();
-        /*
-        Uri uri = item.getUri();
-        if(uri == null) {
-            String deb = item.getText().toString();
-            return; // do nothing.
-        }
-        */
         et.setText(result);
     }
 
@@ -176,16 +168,6 @@ public class MainActivity extends ActionBarActivity {
     private Dialog queryUrlDialog() {
         LayoutInflater inflater = LayoutInflater.from(this);
         View view = inflater.inflate(R.layout.url_dialog, null);
-
-        /*
-        setOnClickListener(view, R.id.button_clear, new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                EditText et = (EditText)urlDialog.findViewById(R.id.edit_url);
-                et.setText("");
-            }
-        });
-        */
         setOnClickListener(view, R.id.button_done, new View.OnClickListener() {
             @Override
             public void onClick(View view) {
