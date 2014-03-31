@@ -158,6 +158,8 @@ public class MainActivity extends ActionBarActivity {
         if (clipboardManager.getPrimaryClip().getItemCount() == 0)
             return; // do nothing.
         ClipData.Item item = clipboardManager.getPrimaryClip().getItemAt(0);
+        if(item.getText() == null)
+            return; // do nothing.
         String result = item.getText().toString();
         et.setText(result);
     }
