@@ -117,12 +117,12 @@ public class DrawingCanvas extends View {
 
 
     boolean mDownHandled = false;
+    RectF tempRegion = new RectF();
 
     public boolean onTouchEvent(MotionEvent event) {
 
         float x = event.getX();
         float y = event.getY();
-        updateEffectiveRegion(x, y);
 
 
         setBrushCursorPos(x, y);
@@ -153,12 +153,22 @@ public class DrawingCanvas extends View {
                     break;
                 mDownHandled = false;
                 mPath.lineTo(mX, mY);
+                mPath.computeBounds(tempRegion, true);
+                updateEffectiveRegion(tempRegion);
+
                 mCanvas.drawPath(mPath, mPaint);
                 mPath.reset();
                 invalidate();
                 break;
         }
         return true;
+    }
+
+    private void updateEffectiveRegion(RectF region) {
+        if(region.width() == 0)
+            return;
+        updateEffectiveRegion(region.left, region.top);
+        updateEffectiveRegion(region.right, region.bottom);
     }
 
     private void updateEffectiveRegion(float x, float y) {
