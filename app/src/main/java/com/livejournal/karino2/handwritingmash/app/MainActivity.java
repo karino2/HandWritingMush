@@ -14,6 +14,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -231,6 +232,34 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+        {
+            return true;
+        }
+        if(keyCode == KeyEvent.KEYCODE_VOLUME_UP)
+        {
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+        {
+            getDrawingCanvas().undo();
+            return true;
+        }
+        if(keyCode == KeyEvent.KEYCODE_VOLUME_UP)
+        {
+            getDrawingCanvas().redo();
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
+    }
 
     private DrawingCanvas getDrawingCanvas() {
         return (DrawingCanvas)findViewById(R.id.canvas);

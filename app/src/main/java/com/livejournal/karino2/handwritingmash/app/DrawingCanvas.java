@@ -7,10 +7,13 @@ import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+
+import java.util.ArrayList;
 
 
 public class DrawingCanvas extends View {
@@ -115,6 +118,145 @@ public class DrawingCanvas extends View {
 
     }
 
+    class UndoList {
+        class UndoCommand {
+            Bitmap undoBmp;
+            Bitmap redoBmp;
+            int x, y;
+            RectF effectiveUndo;
+            RectF effectiveRedo;
+            UndoCommand(int x, int y, Bitmap undo, Bitmap redo, RectF effectiveUndo, RectF effectiveRedo) {
+                undoBmp = undo;
+                redoBmp = redo;
+                this.effectiveUndo = effectiveUndo;
+                this.effectiveRedo = effectiveRedo;
+                this.x = x;
+                this.y = y;
+            }
+            void undo(Canvas target, RectF outEffective) {
+                target.drawBitmap(undoBmp, x, y, null);
+                outEffective.set(effectiveUndo);
+            }
+            void redo(Canvas target, RectF outEffective) {
+                target.drawBitmap(redoBmp, x, y, null);
+                outEffective.set(effectiveRedo);
+            }
+            int getBitmapSize(Bitmap bmp) {
+                return 4*bmp.getWidth()*bmp.getHeight();
+            }
+            int getSize() {
+                return getBitmapSize(undoBmp)+getBitmapSize(redoBmp);
+            }
+
+        }
+
+        ArrayList<UndoCommand> commandList = new ArrayList<UndoCommand>();
+        int currentPos = -1;
+
+
+        public void pushUndoCommand(int x, int y, Bitmap undo, Bitmap redo, RectF effectiveUndo, RectF effectiveRedo) {
+            discardLaterCommand();
+            commandList.add(new UndoCommand(x, y, undo, redo, effectiveUndo, effectiveRedo));
+            currentPos++;
+            discardUntilSizeFit();
+        }
+
+        void discardLaterCommand() {
+            for(int i = commandList.size()-1; i > currentPos; i--) {
+                commandList.remove(i);
+            }
+        }
+
+        final int COMMAND_MAX_SIZE = 1024*1024; // 1M
+
+        private void discardUntilSizeFit() {
+            // currentPos ==0, then do not remove even though it bigger than threshold (I guess never happen, though).
+            while(currentPos > 0 && getCommandsSize() > COMMAND_MAX_SIZE) {
+                commandList.remove(0);
+                currentPos--;
+            }
+        }
+
+        int getCommandsSize() {
+            int res = 0;
+            for(UndoCommand cmd : commandList) {
+                res += cmd.getSize();
+            }
+            return res;
+        }
+        int getCurrentPos() {
+            return currentPos;
+        }
+        public boolean canUndo() {
+            return getCurrentPos() >= 0;
+        }
+        public boolean canRedo() {
+            return getCurrentPos() < commandList.size()-1;
+        }
+
+        public void redo(Canvas target, RectF outEffective) {
+            if (!canRedo())
+                return;
+            currentPos++;
+            commandList.get(getCurrentPos()).redo(target, outEffective);
+        }
+
+        public void undo(Canvas target, RectF outEffective) {
+            if(!canUndo())
+                return;
+            commandList.get(getCurrentPos()).undo(target, outEffective);
+            currentPos--;
+        }
+
+
+    }
+
+    UndoList undoList = new UndoList();
+
+    public void redo() {
+        undoList.redo(mCanvas, tempRegion);
+        assignEffective(tempRegion);
+        invalidate();
+    }
+
+    private void assignEffective(RectF rect) {
+        if(rect.left < 0)
+            return;
+        left = rect.left;
+        bottom = rect.bottom;
+        right = rect.right;
+        top = rect.top;
+    }
+
+    public void undo() {
+        undoList.undo(mCanvas, tempRegion);
+        assignEffective(tempRegion);
+        invalidate();
+    }
+
+    void fitInsideScreen(Rect region) {
+        region.intersect(0, 0, mWidth, mHeight);
+    }
+
+
+
+    Rect tempRect = new Rect();
+    private Rect pathBound() {
+        mPath.computeBounds(tempRegion, false);
+        tempRegion.roundOut(tempRect);
+        widen(tempRect, 5);
+        fitInsideScreen(tempRect);
+        return tempRect;
+    }
+
+    private void widen(Rect tmpInval, int width) {
+        int newLeft = Math.max(0, tmpInval.left- width);
+        int newTop = Math.max(0, tmpInval.top - width);
+        int newRight = Math.min(mWidth, tmpInval.right+ width);
+        int newBottom = Math.min(mHeight, tmpInval.bottom+ width);
+        tmpInval.set(newLeft, newTop, newRight, newBottom);
+    }
+
 
     boolean mDownHandled = false;
     RectF tempRegion = new RectF();
@@ -152,11 +294,22 @@ public class DrawingCanvas extends View {
                 if(!mDownHandled)
                     break;
                 mDownHandled = false;
+
+                RectF undoRegion = new RectF(left, top, right, bottom);
+
                 mPath.lineTo(mX, mY);
                 mPath.computeBounds(tempRegion, true);
                 updateEffectiveRegion(tempRegion);
 
+                RectF redoRegion = new RectF(left, top, right, bottom);
+
+                Rect region = pathBound();
+                Bitmap undo = Bitmap.createBitmap(mBitmap, region.left, region.top, region.width(), region.height() );
                 mCanvas.drawPath(mPath, mPaint);
+                Bitmap redo = Bitmap.createBitmap(mBitmap, region.left, region.top, region.width(), region.height());
+
+                undoList.pushUndoCommand(region.left, region.top, undo, redo, undoRegion, redoRegion);
+
                 mPath.reset();
                 invalidate();
                 break;
