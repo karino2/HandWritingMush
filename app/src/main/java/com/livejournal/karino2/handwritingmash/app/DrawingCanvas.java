@@ -3,6 +3,7 @@ package com.livejournal.karino2.handwritingmash.app;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -60,9 +61,30 @@ public class DrawingCanvas extends View {
     public void resetCanvas(int w, int h) {
         mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(mBitmap);
+        mBitmap.eraseColor(Color.WHITE);
     }
 
-    public Bitmap getBitmap() { return mBitmap; }
+    int margin = 10;
+    int getEffectiveTop() {
+        return Math.max(0, (int)(top-margin));
+    }
+    int getEffectiveBottom() {
+       return Math.min(mHeight, (int)(bottom+2*margin));
+    }
+    int getEffectiveLeft() {
+        return Math.max(0, (int)(left-margin));
+    }
+    int getEffectiveRight() {
+        return Math.min(mWidth, (int)(right+2*margin));
+    }
+
+
+    public Bitmap getBitmap()
+    {
+        return Bitmap.createBitmap(mBitmap, getEffectiveLeft(),  getEffectiveTop(),
+                getEffectiveRight()-getEffectiveLeft(),
+                getEffectiveBottom()-getEffectiveTop() );
+    }
 
 
     protected void onDraw(Canvas canvas) {
@@ -78,6 +100,10 @@ public class DrawingCanvas extends View {
 
     private float mX, mY;
     private static final float TOUCH_TOLERANCE = 4;
+    private float left = -1;
+    private float top = -1;
+    private float right = -1;
+    private float bottom = -1;
 
     private static final float CURSOR_SIZE=10;
     RectF mBrushCursorRegion = new RectF(0f, 0f, 0f, 0f);
@@ -96,6 +122,7 @@ public class DrawingCanvas extends View {
 
         float x = event.getX();
         float y = event.getY();
+        updateEffectiveRegion(x, y);
 
 
         setBrushCursorPos(x, y);
@@ -132,6 +159,22 @@ public class DrawingCanvas extends View {
                 break;
         }
         return true;
+    }
+
+    private void updateEffectiveRegion(float x, float y) {
+        if(left == -1)
+            left = x;
+        if(right == -1)
+            right = x;
+        if(top == -1)
+            top = y;
+        if(bottom == -1)
+            bottom = y;
+
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+        top = Math.min(top, y);
+        bottom = Math.max(bottom, y);
     }
 
 
