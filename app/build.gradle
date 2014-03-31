@@ -10,8 +10,29 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    signingConfigs {
+        /*
+        debug {
+            storeFile file("debug.keystore")
+        }
+        */
+
+        myConfig {
+            storeFile file("/Users/karino/Dropbox/backup/releasekey/release.keystore")
+            storePassword "XXXX"
+            // storePassword System.console().readLine("\n\$ Enter keystore password: ")
+            keyAlias "releasekey"
+            keyPassword "XXXX"
+            // keyPassword System.console().readLine("\n\$ Enter key password: ")
+        }
+    }
+
+
     buildTypes {
         release {
+            debuggable false
+            signingConfig signingConfigs.myConfig
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
