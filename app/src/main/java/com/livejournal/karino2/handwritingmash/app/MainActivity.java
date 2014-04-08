@@ -7,7 +7,6 @@ import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
@@ -43,7 +42,11 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        String someString = getIntent().getStringExtra("replace_key");
+        shouldCopyBackUrl = !someString.equals("");
     }
+
+    boolean shouldCopyBackUrl = false;
 
 
     @Override
@@ -129,75 +132,30 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // show dialog.
-        showDialog(DIALOG_ID_URL);
+        if(shouldCopyBackUrl)
+            copyBackUrl();
     }
 
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        switch(id) {
-            case DIALOG_ID_URL:
-                return queryUrlDialog();
-        }
-        return super.onCreateDialog(id);
-    }
-
-    @Override
-    protected void onPrepareDialog(int id, Dialog dialog) {
-        switch(id) {
-            case DIALOG_ID_URL:
-                urlDialog = dialog;
-                reflectClipboard();
-                return;
-        }
-        super.onPrepareDialog(id, dialog);
-    }
-
-    private void reflectClipboard() {
-        EditText et = (EditText)urlDialog.findViewById(R.id.edit_url);
+    private void copyBackUrl() {
+        Intent data = new Intent();
         ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        if (clipboardManager.getPrimaryClip().getItemCount() == 0)
+        if (clipboardManager.getPrimaryClip().getItemCount() == 0) {
+            showMessage("no clipboard data");
             return; // do nothing.
+        }
         ClipData.Item item = clipboardManager.getPrimaryClip().getItemAt(0);
-        if(item.getText() == null)
+        if(item.getText() == null) {
+            showMessage("clipboard is not text");
             return; // do nothing.
+        }
         String result = item.getText().toString();
-        et.setText(result);
+
+        data.putExtra("replace_key", result);
+        setResult(RESULT_OK, data);
+        finish();
     }
 
 
-    Dialog urlDialog;
-
-    private Dialog queryUrlDialog() {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View view = inflater.inflate(R.layout.url_dialog, null);
-        setOnClickListener(view, R.id.button_done, new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                EditText et = (EditText)urlDialog.findViewById(R.id.edit_url);
-                Intent data = new Intent();
-                data.putExtra("replace_key", et.getText().toString());
-                setResult(RESULT_OK, data);
-                finish();
-            }
-        });
-        setOnClickListener(view, R.id.button_clipboard, new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                reflectClipboard();
-            }
-
-        });
-        urlDialog = new AlertDialog.Builder(this).setTitle("Result Url")
-                .setView(view)
-                .create();
-        return urlDialog;
-    }
-
-    private void setOnClickListener(View view, int rid, View.OnClickListener listener) {
-        Button button = (Button)view.findViewById(rid);
-        button.setOnClickListener(listener);
-    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -220,7 +178,13 @@ public class MainActivity extends ActionBarActivity {
             intent.setAction(Intent.ACTION_SEND);
             intent.setType("image/png");
             intent.putExtra(Intent.EXTRA_STREAM, uri);
-            startActivityForResult(Intent.createChooser(intent, "Share Image"), ACTIVITY_ID_SEND);
+            if(shouldCopyBackUrl) {
+                startActivityForResult(Intent.createChooser(intent, "Share Image"), ACTIVITY_ID_SEND);
+            }
+            else {
+                startActivity(Intent.createChooser(intent, "Share Image"));
+                finish();
+            }
 
             return true;
         }
