@@ -2,13 +2,13 @@ apply plugin: 'android'
 
 android {
     compileSdkVersion 18
-    buildToolsVersion "19.0.3"
+    buildToolsVersion '19.0.3'
 
     defaultConfig {
         minSdkVersion 11
         targetSdkVersion 19
-        versionCode 2
-        versionName "1.2"
+        versionCode 3
+        versionName "1.3"
     }
 
     signingConfigs {
@@ -17,13 +17,12 @@ android {
             storeFile file("debug.keystore")
         }
         */
-
         myConfig {
-            storeFile file("/Users/karino/Dropbox/backup/releasekey/release.keystore")
-            storePassword "XXXX"
+            storeFile file('/Users/karino/Dropbox/backup/releasekey/release.keystore')
+            storePassword 'XXXX'
             // storePassword System.console().readLine("\n\$ Enter keystore password: ")
-            keyAlias "releasekey"
-            keyPassword "XXXX"
+            keyAlias 'releasekey'
+            keyPassword 'XXXX'
             // keyPassword System.console().readLine("\n\$ Enter key password: ")
         }
     }
