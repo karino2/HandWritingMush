@@ -96,7 +96,7 @@ public class DrawingCanvas extends View {
         canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
 
         canvas.drawPath(mPath, mPaint);
-        canvas.drawOval(mBrushCursorRegion, mCursorPaint);
+        // canvas.drawOval(mBrushCursorRegion, mCursorPaint);
     }
 
 
